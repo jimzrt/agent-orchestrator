@@ -214,6 +214,20 @@ func TestExistingHeadReasonCapsFailedAutoRetriesPerHead(t *testing.T) {
 			},
 			want: "",
 		},
+		{
+			name: "a run that ended without submitting blocks automatic retries",
+			runs: []domain.ReviewRun{
+				{PRURL: prURL, TargetSHA: "sha1", Harness: domain.ReviewerCodex, TriggerSource: domain.ReviewTriggerAgent, Status: domain.ReviewRunFailed, FailureReason: domain.ReviewFailureTurnEndedWithoutSubmit},
+			},
+			want: "unsubmitted_same_sha",
+		},
+		{
+			name: "an unsubmitted run on another sha does not block",
+			runs: []domain.ReviewRun{
+				{PRURL: prURL, TargetSHA: "old", Harness: domain.ReviewerCodex, TriggerSource: domain.ReviewTriggerAuto, Status: domain.ReviewRunFailed, FailureReason: domain.ReviewFailureTurnEndedWithoutSubmit},
+			},
+			want: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
