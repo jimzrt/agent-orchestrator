@@ -56,7 +56,7 @@ Do these steps in order for each PR:
 %[5]s
 
 If step 2 reports that the run was superseded, skip it without retrying and continue with the next queued PR.
-Do not retry a failing submit command more than twice. If step 1 still fails, go on to step 2 without --review-id. If step 2 still fails, stop and report the command's error output in your final message instead of trying again.`,
+Do not retry a failing submit command more than twice. If step 1 still fails, go on to step 2 without --review-id. If step 2 still fails, stop and report the command's error output in your final message instead of trying again. Never report the result as recorded unless the submit command succeeded.`,
 		spec.WorkerID, queueText, post, record, rules)
 	return prompt, systemPrompt
 }

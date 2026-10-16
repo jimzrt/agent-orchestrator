@@ -31,6 +31,7 @@ func TestReviewTextsIncludesMultiPRQueue(t *testing.T) {
 		"skip it without retrying and continue with the next queued PR",
 		"gh api --method POST repos/{owner}/{repo}/pulls/{number}/reviews --input - --jq '.id' <<'AO_REVIEW_EOF'\n{",
 		"ao review submit --session mer-1 --run <run-id> --verdict <approved|changes_requested> --review-id <id-from-step-1> --body - <<'AO_REVIEW_EOF'\n<your full review markdown>\nAO_REVIEW_EOF\n",
+		"Never report the result as recorded unless the submit command succeeded.",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q:\n%s", want, prompt)
