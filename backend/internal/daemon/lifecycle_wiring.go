@@ -59,6 +59,7 @@ type lifecycleStack struct {
 	activityDone     <-chan struct{}
 	artifactsDone    <-chan struct{}
 	autoReviewDone   <-chan struct{}
+	reviewDoneDone   <-chan struct{}
 	scmDone          <-chan struct{}
 	trackerDone      <-chan struct{}
 	herdr            *herdr.Server
@@ -179,6 +180,9 @@ func (l *lifecycleStack) Stop() {
 	}
 	if l.autoReviewDone != nil {
 		<-l.autoReviewDone
+	}
+	if l.reviewDoneDone != nil {
+		<-l.reviewDoneDone
 	}
 	if l.scmDone != nil {
 		<-l.scmDone
@@ -382,6 +386,9 @@ func startSession(ctx context.Context, cfg config.Config, runtime runtimeselect.
 		reviewsvc.WithTelemetry(telemetry),
 		reviewsvc.WithNotificationSink(notifications),
 		reviewsvc.WithCodexAccountOperationGate(codexOperationGate),
+	}
+	if lcm != nil {
+		reviewOpts = append(reviewOpts, reviewsvc.WithReviewDoneNotifier(lcm))
 	}
 	if scmProvider != nil {
 		reviewOpts = append(reviewOpts,
