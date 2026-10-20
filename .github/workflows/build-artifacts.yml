@@ -45,14 +45,7 @@ jobs:
           - os: macos-15-intel
             platform: darwin-x64
             artifact: mac-x64
-          - os: windows-latest
-            platform: win32-x64
-            artifact: win
-          # Linux tmux links glibc dynamically (#4616). Build on the oldest
-          # supported glibc baseline so the bundle also runs on Ubuntu 22.04.
-          - os: ubuntu-22.04
-            platform: linux-x64
-            artifact: linux
+          # Local custom build: macOS only. Windows and Linux are dropped.
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -81,9 +74,9 @@ jobs:
       - name: Verify WorkOS build configuration
         shell: bash
         run: |
+          # Local custom build: the app falls back to its built-in client id.
           if [ -z "$VITE_WORKOS_CLIENT_ID" ]; then
-            echo "::error::Repository variable VITE_WORKOS_CLIENT_ID is required for desktop artifacts." >&2
-            exit 1
+            echo "::warning::VITE_WORKOS_CLIENT_ID is unset; using the app's built-in default."
           fi
       # Stamp the conductor-supplied version into package.json for this build,
       # dropping any +build metadata.
@@ -169,6 +162,20 @@ jobs:
           jq -n --arg f "$name" --arg h "$hash" \
             '{($f): $h}' > "dist-artifact/$PLATFORM.digest.json"
           echo "$PLATFORM: $name sha256=$hash" >> "$GITHUB_STEP_SUMMARY"
+          # Local custom build: also ship the first-install dmg.
+          case "$PLATFORM" in
+            darwin-*)
+              dmg="$(find out/make -name '*.dmg' | head -n1)"
+              if [ -z "$dmg" ]; then echo "no dmg output found for $PLATFORM" >&2; exit 1; fi
+              dmg_name="agent-orchestrator-$PLATFORM.dmg"
+              cp "$dmg" "dist-artifact/$dmg_name"
+              dmg_hash="$(openssl dgst -sha256 "dist-artifact/$dmg_name" | awk '{print $NF}')"
+              jq --arg f "$dmg_name" --arg h "$dmg_hash" '. + {($f): $h}' \
+                "dist-artifact/$PLATFORM.digest.json" > "dist-artifact/$PLATFORM.digest.json.tmp"
+              mv "dist-artifact/$PLATFORM.digest.json.tmp" "dist-artifact/$PLATFORM.digest.json"
+              echo "$PLATFORM: $dmg_name sha256=$dmg_hash" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+          esac
       # The deb maker in forge.config.ts also runs on linux; capture its output
       # as a separate `linux-deb` artifact. It lives in its own dist-deb dir so
       # the `linux` artifact's agent-orchestrator-linux-x64.* glob below cannot
