@@ -113,7 +113,8 @@ jobs:
           # which went stale across the AgentWrapper -> Untrivial-ai transfer and
           # left every published build pointing its updater at the old owner,
           # alive only through GitHub's rename redirect (#3523).
-          AO_RELEASE_REPO: ${{ github.repository }}
+          # Local custom build: forge.config.ts bakes a dead feed regardless.
+          AO_RELEASE_REPO: local-earlyflush/no-updates
         run: npm run make
       - name: Verify baked update feed repo
         # app-update.yml is what electron-updater reads at runtime to build the
@@ -127,9 +128,10 @@ jobs:
           set -euo pipefail
           owner="$(sed -n 's/^owner:[[:space:]]*//p' app-update.yml)"
           repo="$(sed -n 's/^repo:[[:space:]]*//p' app-update.yml)"
-          echo "baked feed: $owner/$repo (expected $GITHUB_REPOSITORY)"
-          if [ "$owner/$repo" != "$GITHUB_REPOSITORY" ]; then
-            echo "::error::app-update.yml bakes $owner/$repo but this build publishes from $GITHUB_REPOSITORY" >&2
+          expected="local-earlyflush/no-updates"
+          echo "baked feed: $owner/$repo (expected $expected)"
+          if [ "$owner/$repo" != "$expected" ]; then
+            echo "::error::app-update.yml bakes $owner/$repo but a custom build must bake $expected" >&2
             exit 1
           fi
       - name: Collect artifact and compute digest
