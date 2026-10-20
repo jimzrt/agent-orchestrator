@@ -23,6 +23,10 @@ import { BUNDLED_TMUX_VERSION } from "./scripts/tmux-version.mjs";
 // fails the build instead of stranding the fleet on a redirect (#3523).
 const DEFAULT_RELEASE_REPO = "Untrivial-ai/agent-orchestrator";
 
+// Local custom builds never auto-update: app-update.yml always points at a
+// feed that does not exist, whatever AO_RELEASE_REPO the build env sets.
+const CUSTOM_BUILD_UPDATE_FEED = "local-earlyflush/no-updates";
+
 // The packaged binary name (no extension). Single source of truth: the packager
 // names the exe/ELF from this, and the NSIS + deb makers must point their
 // shortcut/launcher at the SAME name. Drift here means a broken Start menu
@@ -179,7 +183,7 @@ const config: ForgeConfig = {
                 if (wakeBuild.error) throw wakeBuild.error;
                 if (wakeBuild.status !== 0) throw new Error("macOS wake helper build failed");
 			}
-			const { owner, name } = parseReleaseRepo(process.env.AO_RELEASE_REPO);
+			const { owner, name } = parseReleaseRepo(CUSTOM_BUILD_UPDATE_FEED);
 			const yml = [
 				"provider: github",
 				`owner: ${owner}`,
