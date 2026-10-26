@@ -29,6 +29,31 @@
 
 <br />
 
+> [!WARNING]
+> **Custom build.** This branch is a personal custom build of Agent
+> Orchestrator, not an official release. It is upstream `main` at
+> [`12e1fd738`](https://github.com/OrchestratorInc/agent-orchestrator/commit/12e1fd738b6a92847b22b2813f73b01ef93a2936)
+> plus these open upstream PRs:
+>
+> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614): flush done reports early once no other worker is working
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821): Codex reviewer result submit fixes
+> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831): deliver a PR's review feedback as one batched message
+> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955): tell the worker when an AO review run finishes
+> - [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956): find a just-opened PR when `ao review trigger` runs
+>
+> It also adds the **Maki harness**, which is not upstream (see
+> [Using Maki with Meridian as a Claude proxy](#using-maki-with-meridian-as-a-claude-proxy)).
+>
+> **Auto-update is off.** The build bakes in an update feed that doesn't exist,
+> so it never updates itself. To update, install a newer custom build by hand.
+>
+> **The macOS build is unsigned.** After copying the app to `/Applications`,
+> clear the quarantine flag before the first launch:
+>
+> ```sh
+> xattr -dr com.apple.quarantine "/Applications/Agent Orchestrator.app"
+> ```
+
 ## Why Orchestrator.inc
 
 One coding agent can handle a task. Running several means splitting the work, keeping branches from colliding, and following every change through CI, review, and merge. Orchestrator.inc is a local desktop workspace for that: every task gets its own agent, branch, and worktree, and your code stays on your machine.
@@ -161,6 +186,44 @@ Download from [orchestrator.inc/download](https://orchestrator.inc/download/) or
 | **Linux** (Fedora/RHEL) | [`agent-orchestrator-linux-x64.rpm`](https://github.com/OrchestratorInc/agent-orchestrator/releases/latest/download/agent-orchestrator-linux-x64.rpm) |
 
 Open Orchestrator.inc and point it at the repository you want it to manage. The desktop app runs the daemon for you, so no CLI is required. See the [installation guide](https://docs.orchestrator.inc/installation) for agent CLI setup and troubleshooting.
+
+## Using Maki with Meridian as a Claude proxy
+
+This custom build adds a `maki` harness. [Maki](https://maki.sh) is a Rust
+terminal coding agent with its own tools. [Meridian](https://github.com/rynfar/meridian)
+is a local bridge that runs Claude requests through Anthropic's official Agent
+SDK with your `claude login` and serves an Anthropic-compatible API on
+`127.0.0.1:3456`. In passthrough mode Maki keeps its own tools, and Maki workers
+run on your Claude subscription. Its limits are shared with Claude Code and AO's
+Claude workers. Using a subscription this way is your call; check Anthropic's
+current terms.
+
+**Prerequisites:** Claude Code installed and logged in (`claude login` is a step
+you do yourself in the browser), Node 22+, and `npm`. Tested with Maki v0.6.5
+and Meridian 1.85.0.
+
+**Key steps:**
+
+1. Install Maki v0.6.5 with its official installer into `~/.local/bin`.
+2. Install Meridian: `npm install -g @rynfar/meridian@1.85.0`.
+3. Run Meridian at login with `MERIDIAN_PASSTHROUGH=1` and
+   `MERIDIAN_DEFAULT_AGENT=passthrough` (a launchd agent on macOS, a systemd
+   user service on Linux), and check `curl -s 127.0.0.1:3456/health`.
+4. Add a `meridian` provider to `~/.config/maki/providers.toml` with
+   `claude-opus-5-5`, `claude-sonnet-5-5` and `claude-haiku-5-5`.
+5. In AO, pick the **Maki** agent with model `meridian/claude-sonnet-5-5`.
+
+The full macOS guide, with checks and troubleshooting, is
+[docs/custom-build/maki-meridian-setup.md](docs/custom-build/maki-meridian-setup.md).
+
+**Linux:** the setup is the same, with Meridian as a systemd user service
+(`~/.config/systemd/user/meridian.service`, `MERIDIAN_PASSTHROUGH=1`,
+`MERIDIAN_DEFAULT_AGENT=passthrough`, listening on `127.0.0.1:3456`) and the same
+`meridian` provider in `~/.config/maki/providers.toml`. See
+[the guide's Linux section](docs/custom-build/maki-meridian-setup.md#linux).
+
+For how AO runs Maki (binary lookup, auth probe, activity hooks, Chat mode), see
+[docs/harnesses/maki.md](docs/harnesses/maki.md).
 
 ## Documentation
 
