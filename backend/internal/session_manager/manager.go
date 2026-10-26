@@ -5383,6 +5383,14 @@ func (m *Manager) SendWithOptions(ctx context.Context, id domain.SessionID, mess
 	return m.send(ctx, id, message, "", options)
 }
 
+// SendWithClientMessageID delivers an automated message under a caller-chosen
+// client message id. A Chat session records the id with the message, so the
+// caller can later read whether that exact message reached the agent, was
+// queued for a sleeping session, or failed. Terminal sessions deliver as Send.
+func (m *Manager) SendWithClientMessageID(ctx context.Context, id domain.SessionID, message, clientMessageID string) error {
+	return m.send(ctx, id, message, clientMessageID, ports.MessageDeliveryOptions{InteractionAt: m.clock()})
+}
+
 type semanticDeliveryStore interface {
 	SemanticDeliveryAccepted(ctx context.Context, id domain.SessionID, runtimeLaunchID, deliveryID string) (bool, error)
 }
