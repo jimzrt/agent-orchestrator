@@ -12,4 +12,9 @@ describe("agent identities", () => {
 			logoKey: "opencode-v2",
 		});
 	});
+
+	it("offers Maki once with an initial fallback instead of a logo", () => {
+		expect(AGENT_OPTIONS.filter((agent) => agent === "maki")).toHaveLength(1);
+		expect(getAgentIdentity("maki")).toMatchObject({ id: "maki", label: "Maki", initial: "M" });
+	});
 });
