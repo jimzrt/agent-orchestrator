@@ -50,6 +50,7 @@ var agentDocumentationURLs = map[Target]string{
 	TargetOpenHands:   "https://docs.openhands.dev/openhands/usage/cli/installation",
 	TargetCommandCode: "https://commandcode.ai/docs/quickstart",
 	TargetHermes:      "https://github.com/NousResearch/hermes-agent",
+	TargetMaki:        "https://maki.sh/docs/quick-start/",
 }
 
 func (s requestPlanner) agentMethodPlans(target Target, operation AgentOperation) []Plan {
@@ -283,6 +284,10 @@ func (s requestPlanner) agentMethodPlans(target Target, operation AgentOperation
 		}
 	case TargetCommandCode:
 		plans = []Plan{s.planNPM(target, "command-code")}
+	case TargetMaki:
+		// The installer downloads the release binary into ~/.local/bin, or
+		// %LOCALAPPDATA%\maki on Windows.
+		plans = []Plan{s.officialByOS(target, "https://maki.sh/install.sh", "sh", "https://maki.sh/install.ps1", agentDocumentationURLs[target])}
 	default:
 		plans = []Plan{{Target: target, Unsupported: true, Method: "manual", Reason: "unknown install target"}}
 	}
@@ -479,6 +484,7 @@ var vendorUpdateCommands = map[Target][]string{
 	TargetOpencode:   {"opencode", "upgrade", "--method", "curl"},
 	TargetGoose:      {"goose", "update"},
 	TargetHermes:     {"hermes", "update", "--yes"},
+	TargetMaki:       {"maki", "update", "--yes"},
 	TargetKimchi:     {"kimchi", "update", "self", "--force"},
 	TargetOMP:        {"omp", "update"},
 	TargetAutohand:   {"autohand", "update"},

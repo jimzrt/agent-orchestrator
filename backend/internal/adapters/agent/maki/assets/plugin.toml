@@ -1,0 +1,4 @@
+# agent-orchestrator: managed maki activity package (do not edit)
+[permissions]
+run = true
+env = true

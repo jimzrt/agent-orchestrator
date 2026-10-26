@@ -16353,6 +16353,7 @@ components:
           - command-code
           - memcode
           - hermes
+          - maki
           - fake
           type: string
         approvalMode:
@@ -17054,6 +17055,7 @@ components:
           - command-code
           - memcode
           - hermes
+          - maki
           - cloudflared
           type: string
         updatedAt:
@@ -20426,6 +20428,7 @@ components:
           - command-code
           - memcode
           - hermes
+          - maki
           type: string
         issueId:
           type: string
