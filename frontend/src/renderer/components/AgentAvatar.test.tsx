@@ -66,4 +66,10 @@ describe("AgentAvatar", () => {
 		render(<AgentAvatar provider="hermes" />);
 		expect(screen.getByRole("img", { name: "hermes" })).toHaveAttribute("src", expect.stringContaining("hermes.png"));
 	});
+	it("falls back to the Maki initial while no brand mark is bundled", () => {
+		render(<AgentAvatar provider="maki" />);
+		const mark = screen.getByRole("img", { name: "maki" });
+		expect(mark.tagName).toBe("SPAN");
+		expect(mark).toHaveTextContent("M");
+	});
 });

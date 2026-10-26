@@ -1427,6 +1427,22 @@ describe("HarnessSettingsSection", () => {
 		expect(within(row).getByRole("button", { name: "Log in again" })).toBeEnabled();
 	});
 
+	it("keeps configured Maki unverified and offers its native setup", async () => {
+		const configured = { agents: [agentReadiness("maki", "Maki", { authentication: "configured" })] };
+		vi.mocked(apiClient.GET).mockImplementation(async (path) => {
+			if (path === "/api/v1/agents/readiness") return { data: configured } as never;
+			if (path === "/api/v1/agents/auth-plans") return { data: { plans: [{ agentId: "maki", action: "setup", launchMode: "terminal", available: true, displayCommand: "maki auth login" }] } } as never;
+			if (path === "/api/v1/agents/installers") return { data: { agents: [] } } as never;
+			if (path === "/api/v1/agents/install-jobs") return { data: { jobs: [] } } as never;
+			return { data: undefined } as never;
+		});
+		renderSection();
+		const row = await findAgentRow("maki");
+		expect(await within(row).findByRole("button", { name: "Open setup" })).toBeEnabled();
+		expect(within(row).queryByText("Configured")).toBeNull();
+		expect(within(row).queryByText("Connected")).toBeNull();
+	});
+
 	it("offers fx installation while readiness refreshes automatically", async () => {
 		const fxCatalog = { agents: [{ ...catalogWithInstalled().agents[0], id: "fx", label: "fx" }] };
 		const fxPlan = { agentId: "fx", available: true, automatic: true, method: "official-installer", command: "bash <downloaded from https://fx.sh/setup.sh>", documentationUrl: "https://fx.sh/docs", expectedDestination: "~/.local/bin/fx", methods: [{ id: "official-installer", label: "Official installer", available: true, recommended: true, command: "bash <downloaded from https://fx.sh/setup.sh>", reinstallAvailable: false }] };

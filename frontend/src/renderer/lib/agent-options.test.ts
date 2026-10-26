@@ -9,10 +9,15 @@ describe("AGENT_OPTIONS", () => {
 		expect(AGENT_OPTIONS.filter((agent) => agent === "omp")).toHaveLength(1);
 		expect(AGENT_OPTIONS.filter((agent) => agent === "codewhale")).toHaveLength(1);
 		expect(AGENT_OPTIONS.filter((agent) => agent === "openhands")).toHaveLength(1);
+		expect(AGENT_OPTIONS.filter((agent) => agent === "maki")).toHaveLength(1);
 		expect(new Set(AGENT_OPTIONS).size).toBe(AGENT_OPTIONS.length);
 	});
 	it("uses the concise DeepSeek display name", () => {
 		expect(agentLabel("deepseek-harness")).toBe("DeepSeek");
+	});
+
+	it("labels Maki by its product name", () => {
+		expect(agentLabel("maki")).toBe("Maki");
 	});
 
 	it("exposes OpenCode 2 as a distinct worker option", () => {
