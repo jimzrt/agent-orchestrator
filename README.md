@@ -29,6 +29,28 @@
 
 <br />
 
+> [!WARNING]
+> **Custom build.** This branch is a personal custom build of Agent
+> Orchestrator, not an official release. It is upstream `main` at
+> [`12e1fd738`](https://github.com/OrchestratorInc/agent-orchestrator/commit/12e1fd738b6a92847b22b2813f73b01ef93a2936)
+> plus these open upstream PRs:
+>
+> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614): flush done reports early once no other worker is working
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821): Codex reviewer result submit fixes
+> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831): deliver a PR's review feedback as one batched message
+> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955): tell the worker when an AO review run finishes
+> - [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956): find a just-opened PR when `ao review trigger` runs
+>
+> **Auto-update is off.** The build bakes in an update feed that doesn't exist,
+> so it never updates itself. To update, install a newer custom build by hand.
+>
+> **The macOS build is unsigned.** After copying the app to `/Applications`,
+> clear the quarantine flag before the first launch:
+>
+> ```sh
+> xattr -dr com.apple.quarantine "/Applications/Agent Orchestrator.app"
+> ```
+
 ## Why Orchestrator.inc
 
 One coding agent can handle a task. Running several means splitting the work, keeping branches from colliding, and following every change through CI, review, and merge. Orchestrator.inc is a local desktop workspace for that: every task gets its own agent, branch, and worktree, and your code stays on your machine.
