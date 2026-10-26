@@ -42,10 +42,8 @@ jobs:
           - os: macos-latest
             platform: darwin-arm64
             artifact: mac-arm64
-          - os: macos-15-intel
-            platform: darwin-x64
-            artifact: mac-x64
-          # Local custom build: macOS only. Windows and Linux are dropped.
+          # Local custom build: Apple silicon macOS only. Intel macOS,
+          # Windows and Linux are dropped.
     runs-on: ${{ matrix.os }}
     defaults:
       run:
