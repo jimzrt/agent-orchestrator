@@ -463,6 +463,7 @@ func TestOMPAndHelpBackedAgentsUseDocumentedDiscoveryCommands(t *testing.T) {
 		{agent: "crush", want: []string{"models"}},
 		{agent: "fx", want: []string{"models", "--json"}},
 		{agent: "command-code", want: []string{"--list-models"}},
+		{agent: "maki", want: []string{"models"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.agent, func(t *testing.T) {
@@ -663,6 +664,7 @@ func TestCustomModelEntryPolicy(t *testing.T) {
 		{agent: "autohand", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 		{agent: "fx", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 		{agent: "hermes", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
+		{agent: "maki", wantEntryMode: "direct", wantSelection: ports.ModelSelectionCatalog},
 	}
 
 	for _, tc := range tests {
@@ -1389,5 +1391,19 @@ func TestModelDiscoveryErrorNamesACrashedCLIsError(t *testing.T) {
 		"    at Module.require (node:internal/modules/cjs/loader:1311:19)\n"
 	if detail := discoveryErrorDetail([]byte(output)); detail != "Error: Cannot find module 'tree-sitter'" {
 		t.Fatalf("detail = %q, want the error line", detail)
+	}
+}
+
+func TestMakiModelsParseProviderSpecs(t *testing.T) {
+	models, err := commandSpecs["maki"].parser([]byte("meridian/claude-sonnet-5-5\nopenai/gpt-5.6-luna\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []ports.AgentModelInfo{
+		{ID: "meridian/claude-sonnet-5-5", Label: "claude-sonnet-5-5", Provider: "meridian"},
+		{ID: "openai/gpt-5.6-luna", Label: "gpt-5.6-luna", Provider: "openai"},
+	}
+	if !reflect.DeepEqual(models, want) {
+		t.Fatalf("maki models = %+v, want %+v", models, want)
 	}
 }

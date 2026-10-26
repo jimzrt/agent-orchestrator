@@ -81,6 +81,7 @@ func TestSignalCoverageForHarness(t *testing.T) {
 		{domain.HarnessAider, SignalCoveragePartial},
 		{domain.HarnessCommandCode, SignalCoveragePartial},
 		{domain.HarnessMemcode, SignalCoveragePartial},
+		{domain.HarnessMaki, SignalCoverageComplete},
 		{domain.HarnessCrush, SignalCoverageNone},
 	}
 

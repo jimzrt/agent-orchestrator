@@ -344,3 +344,20 @@ func TestMemcodeAdapterIsSelectable(t *testing.T) {
 		t.Fatal("missing TUI agent")
 	}
 }
+
+func TestMakiAdapterIsSelectable(t *testing.T) {
+	reg, err := Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	adapter, ok := reg.Get("maki")
+	if !ok || !domain.HarnessMaki.IsKnown() {
+		t.Fatal("Maki is not selectable")
+	}
+	if adapter.Manifest().Name != "Maki" {
+		t.Fatal(adapter.Manifest())
+	}
+	if _, ok := adapter.(ports.Agent); !ok {
+		t.Fatal("missing TUI agent")
+	}
+}

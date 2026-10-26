@@ -123,8 +123,8 @@ func TestAgentPlansCoverEveryHarnessOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(plans) != 38 {
-		t.Fatalf("got %d plans, want 38", len(plans))
+	if len(plans) != 39 {
+		t.Fatalf("got %d plans, want 39", len(plans))
 	}
 	seen := make(map[string]bool, len(plans))
 	for _, plan := range plans {
@@ -362,6 +362,27 @@ func TestHermesPrefersHomebrewAndFallsBackToOfficialInstaller(t *testing.T) {
 	plan := s.planAgent(TargetHermes)
 	if plan.Unsupported || plan.Method != "homebrew" || plan.Package != "hermes-agent" {
 		t.Fatalf("Hermes plan with Homebrew = %+v, want homebrew hermes-agent", plan)
+	}
+}
+
+func TestMakiUsesOfficialInstallerAndSelfUpdate(t *testing.T) {
+	for _, tc := range []struct{ goos, shell, url string }{
+		{"darwin", "sh", "https://maki.sh/install.sh"},
+		{"linux", "sh", "https://maki.sh/install.sh"},
+		{"windows", "powershell.exe", "https://maki.sh/install.ps1"},
+	} {
+		t.Run(tc.goos, func(t *testing.T) {
+			plan := newTestService(tc.goos, tc.shell).planAgent(TargetMaki)
+			if plan.Unsupported || plan.Method != "official-installer" || plan.Script == nil || plan.Script.URL != tc.url {
+				t.Fatalf("Maki plan = %+v, want official installer %s", plan, tc.url)
+			}
+		})
+	}
+	if got := vendorUpdateCommands[TargetMaki]; !slices.Equal(got, []string{"maki", "update", "--yes"}) {
+		t.Fatalf("Maki update command = %v, want maki update --yes", got)
+	}
+	if source, ok := officialSourceFor(TargetMaki, "linux", "amd64"); !ok || source.kind != officialGitHub || source.ref != "tontinton/maki" {
+		t.Fatalf("Maki release source = %+v, %t", source, ok)
 	}
 }
 
