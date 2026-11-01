@@ -162,6 +162,8 @@ ao send --session ao-123 --message "Please address the failing test"
 
 `--session` and `--message` are required for ordinary sends. When called from a session with `AO_SESSION_ID`, Orchestrator prefixes the sender identity.
 
+An ordinary send prints how it was accepted: `delivered:` when it started a new Chat turn, `queued:` when it waits behind a running turn (with its position in the queue), or `sent:` when it was written to a terminal session. A queued message counts as delivered and reaches the agent after its current turn.
+
 Use `--steer` to steer an active supported Chat turn or submit a normal turn when idle. `--client-message-id` supplies a stable delivery handle. If delivery is uncertain, recover the recorded result without resending:
 
 ```bash

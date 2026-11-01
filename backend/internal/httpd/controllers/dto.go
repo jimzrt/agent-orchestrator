@@ -1296,6 +1296,21 @@ type SendSessionMessageResponse struct {
 	OK        bool             `json:"ok"`
 	SessionID domain.SessionID `json:"sessionId"`
 	Message   string           `json:"message"`
+	// Delivery reports how the daemon accepted the message. It is omitted when
+	// the daemon has no new delivery to report, such as a duplicate.
+	Delivery *SendSessionMessageDelivery `json:"delivery,omitempty"`
+}
+
+// SendSessionMessageDelivery is how POST /api/v1/sessions/{sessionId}/send
+// accepted a message: started a Chat turn, queued behind a running one, queued
+// for a waking session, deferred until an interface switch finishes, or sent to
+// a terminal.
+type SendSessionMessageDelivery struct {
+	Outcome string `json:"outcome" enum:"started,queued,waking,deferred,sent"`
+	TurnID  string `json:"turnId,omitempty"`
+	// QueuePosition counts the pending queued Chat messages up to and including
+	// this one. Set only for queued and waking outcomes.
+	QueuePosition int `json:"queuePosition,omitempty"`
 }
 
 // DelegateTaskRequest is the body of POST /api/v1/orchestrators/delegate.

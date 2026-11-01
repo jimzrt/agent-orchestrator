@@ -68,6 +68,7 @@ type recordingLauncher struct {
 	preflightErr     error
 	startErr         error
 	turnErr          error
+	relayOutcome     ports.MessageDeliveryOutcome
 	live             bool
 	beforeStart      func(ChatStart)
 	afterReady       func()
@@ -206,11 +207,14 @@ func (l *recordingLauncher) StartChatTurn(_ context.Context, _ domain.SessionID,
 	return "turn-1", l.turnErr
 }
 
-func (l *recordingLauncher) RelaySessionChatTurn(_ context.Context, _ domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (string, error) {
+func (l *recordingLauncher) RelaySessionChatTurn(_ context.Context, _ domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	l.relayed = append(l.relayed, text)
 	l.relayIDs = append(l.relayIDs, clientMessageID)
 	l.relayOptions = append(l.relayOptions, options)
-	return "turn-relay", l.turnErr
+	if l.relayOutcome.Kind != "" {
+		return l.relayOutcome, l.turnErr
+	}
+	return ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryStarted, TurnID: "turn-relay"}, l.turnErr
 }
 
 func (l *recordingLauncher) StopChat(_ context.Context, id domain.SessionID) error { //nolint:unparam
@@ -1729,7 +1733,7 @@ func TestSendRoutesIntoTheChatConversation(t *testing.T) {
 	} {
 		options.InteractionAt = time.Date(2026, 7, 5, 0, 0, 0, 0, time.UTC)
 		for _, key := range []string{"", "outbox-message-1"} {
-			handled, err := mgr.sendChat(ctx, rec.ID, "direction", key, options)
+			handled, _, err := mgr.sendChat(ctx, rec.ID, "direction", key, options)
 			if err != nil || !handled {
 				t.Fatalf("sendChat: handled=%v err=%v", handled, err)
 			}
@@ -1748,6 +1752,33 @@ func TestSendRoutesIntoTheChatConversation(t *testing.T) {
 	last := len(launcher.relayed) - 1
 	if launcher.relayed[last] != "AO review done: approved" || launcher.relayIDs[last] != "review-done:run-1:0" {
 		t.Fatalf("relay = %q under %q, want the notice under its attempt id", launcher.relayed[last], launcher.relayIDs[last])
+	}
+}
+
+// `ao send` prints how a Chat session accepted the message, so the relay's
+// outcome must reach SendWithOptions unchanged.
+func TestSendWithOptionsReportsChatRelayOutcome(t *testing.T) {
+	queued := ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryQueued, TurnID: "turn-queued", QueuePosition: 2}
+	launcher := &recordingLauncher{relayOutcome: queued}
+	mgr, _, _ := newChatManager(launcher)
+	ctx := context.Background()
+
+	rec, _, _, err := mgr.Spawn(ctx, ports.SpawnConfig{
+		ProjectID:     chatTestProject,
+		Kind:          domain.KindWorker,
+		Harness:       domain.HarnessCodex,
+		Prompt:        "initial brief",
+		RequestedMode: domain.SessionModeChat,
+	})
+	if err != nil {
+		t.Fatalf("Spawn: %v", err)
+	}
+	got, err := mgr.SendWithOptions(ctx, rec.ID, "follow-up", nil, ports.MessageDeliveryOptions{SenderSessionID: "orchestrator-1"})
+	if err != nil {
+		t.Fatalf("SendWithOptions: %v", err)
+	}
+	if got != queued {
+		t.Fatalf("outcome = %+v, want relay outcome %+v", got, queued)
 	}
 }
 
