@@ -5006,12 +5006,14 @@ func (m *Manager) applyWorkspaceProjectPreserved(ctx context.Context, rows []por
 func (m *Manager) Send(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment) error {
 	// Chat keeps its established automation relay attribution unless a trusted
 	// caller supplies the explicit user-authored fact through SendWithOptions.
-	return m.SendWithOptions(ctx, id, message, attachment, ports.MessageDeliveryOptions{})
+	_, err := m.SendWithOptions(ctx, id, message, attachment, ports.MessageDeliveryOptions{})
+	return err
 }
 
 // SendWithOptions delivers a message with caller-supplied authorship facts that
-// are independent of the mechanism AO uses to carry it.
-func (m *Manager) SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) error {
+// are independent of the mechanism AO uses to carry it, and reports how the
+// message was accepted.
+func (m *Manager) SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	if attachment != nil {
 		// Reuses StageAttachments rather than a bespoke writer: it already owns the
 		// empty-workspace guard (refusing beats writing under the daemon's cwd),
@@ -5019,12 +5021,12 @@ func (m *Manager) SendWithOptions(ctx context.Context, id domain.SessionID, mess
 		// creation, and the git-exclude step.
 		refs, err := m.StageAttachments(ctx, id, []ports.SpawnAttachment{*attachment})
 		if err != nil {
-			return fmt.Errorf("send %s: attachment: %w", id, err)
+			return ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: attachment: %w", id, err)
 		}
 		message = appendAttachmentReferences(message, refs)
 	}
 	options.InteractionAt = m.clock()
-	return m.send(ctx, id, message, "", options)
+	return m.sendWithOutcome(ctx, id, message, "", options)
 }
 
 // SendWithClientMessageID delivers an automated message under a caller-chosen
@@ -5048,7 +5050,7 @@ func (m *Manager) SendSemantic(ctx context.Context, id domain.SessionID, message
 		return ErrNotFound
 	}
 	if domain.NormalizeSessionMode(rec.Mode) == domain.SessionModeChat {
-		handled, sendErr := m.sendChat(ctx, id, message, clientMessageID, ports.MessageDeliveryOptions{})
+		handled, _, sendErr := m.sendChat(ctx, id, message, clientMessageID, ports.MessageDeliveryOptions{})
 		if !handled {
 			return ErrSemanticAcceptanceUnsupported
 		}
@@ -5137,24 +5139,37 @@ func (m *Manager) InterruptTUI(ctx context.Context, id domain.SessionID) error {
 // retries. Ordinary callers leave it empty; the outbox preserves the key across
 // restart, rollback, and even a second overlapping handoff.
 func (m *Manager) send(ctx context.Context, id domain.SessionID, message, clientMessageID string, options ports.MessageDeliveryOptions) error {
+	_, err := m.sendWithOutcome(ctx, id, message, clientMessageID, options)
+	return err
+}
+
+// sendWithOutcome is send that also reports how the message was accepted.
+func (m *Manager) sendWithOutcome(ctx context.Context, id domain.SessionID, message, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	// A controller transition deliberately has a short interval with no writer.
 	// Queue internal/lifecycle sends durably instead of racing either controller
 	// or dropping coordination work; the transition worker drains this outbox
 	// only after the target controller is active.
 	if queued, err := m.queueDuringInterfaceTransition(ctx, id, message, clientMessageID, options); err != nil {
-		return fmt.Errorf("send %s: interface transition: %w", id, err)
+		return ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: interface transition: %w", id, err)
 	} else if queued {
-		return nil
+		return ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryDeferred}, nil
 	}
 	// Chat mode has no pane to type into, so it does not go through the messenger
 	// at all. Without this branch the send reached the runtime guard and was
 	// refused as "missing runtime handles" — true of the handles, wrong about the
 	// session, and it left `ao send` and orchestrator-to-worker relay unable to
 	// reach a chat worker.
-	if handled, err := m.sendChat(ctx, id, message, clientMessageID, options); handled {
-		return err
+	if handled, outcome, err := m.sendChat(ctx, id, message, clientMessageID, options); handled {
+		return outcome, err
 	}
+	if err := m.sendTerminal(ctx, id, message, clientMessageID, options); err != nil {
+		return ports.MessageDeliveryOutcome{}, err
+	}
+	return ports.MessageDeliveryOutcome{Kind: ports.MessageDeliverySent}, nil
+}
 
+// sendTerminal writes a message into a terminal session's pane.
+func (m *Manager) sendTerminal(ctx context.Context, id domain.SessionID, message, clientMessageID string, options ports.MessageDeliveryOptions) error {
 	if _, coordination := domain.CoordinationDeliveryID(message); !coordination && !options.AuthoredByUser && strings.TrimSpace(message) != "" {
 		deliveryID := clientMessageID
 		if deliveryID == "" {

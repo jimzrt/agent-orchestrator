@@ -1354,11 +1354,11 @@ func TestRelayWhileHibernatedKeepsSenderAndInteraction(t *testing.T) {
 	}
 	interactionAt := h.now().Add(-time.Minute)
 
-	turnID, err := h.svc.RelaySessionChatTurn(ctx, testSession, "please rebase", "relay-sender-1", ports.MessageDeliveryOptions{
+	outcome, err := h.svc.RelaySessionChatTurn(ctx, testSession, "please rebase", "relay-sender-1", ports.MessageDeliveryOptions{
 		SenderSessionID: string(sender.ID), InteractionAt: interactionAt,
 	})
-	if err != nil || turnID == "" {
-		t.Fatalf("cold relay = %q, %v", turnID, err)
+	if err != nil || outcome.TurnID == "" || outcome.Kind != ports.MessageDeliveryWaking || outcome.QueuePosition != 1 {
+		t.Fatalf("cold relay = %+v, %v; want queued for the waking session at position 1", outcome, err)
 	}
 	conversation, err := h.st.ConversationForSession(ctx, testSession)
 	if err != nil {

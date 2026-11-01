@@ -846,7 +846,7 @@ func (c chatLauncher) StartChatTurn(ctx context.Context, id domain.SessionID, te
 	return c.svc.StartChatTurn(ctx, id, text)
 }
 
-func (c chatLauncher) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (string, error) {
+func (c chatLauncher) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	return c.svc.RelaySessionChatTurn(ctx, id, text, clientMessageID, options)
 }
 
