@@ -5437,9 +5437,9 @@ func TestPRObservation_AOReviewBatchLeavesOutItsSummary(t *testing.T) {
 	m := New(st, msg)
 	st.sessions["mer-1"] = working("mer-1")
 	st.runs = []domain.ReviewRun{
-		{ID: "run-1", SessionID: "mer-1", PRURL: "pr1", Status: domain.ReviewRunComplete, Verdict: domain.VerdictChangesRequested, GithubReviewID: "77"},
+		{ID: "run-1", SessionID: "mer-1", PRURL: "pr1", Status: domain.ReviewRunCompleted, Verdict: domain.VerdictChangesRequested, GithubReviewID: "77"},
 		// Another PR's pass with the same database id must not match.
-		{ID: "run-2", SessionID: "mer-1", PRURL: "pr2", Status: domain.ReviewRunComplete, GithubReviewID: "88"},
+		{ID: "run-2", SessionID: "mer-1", PRURL: "pr2", Status: domain.ReviewRunCompleted, GithubReviewID: "88"},
 	}
 	st.reviews["pr1"] = []domain.PullRequestReview{
 		{ID: "PRR_ao", Author: "me", State: domain.ReviewChangesRequest, URL: "https://github.com/o/r/pull/1#pullrequestreview-77", Body: "Optional: rename x.", AutoInjectReview: true},
