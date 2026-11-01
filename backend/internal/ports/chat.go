@@ -503,6 +503,36 @@ type MessageDeliveryOptions struct {
 	AuthoredByUser  bool
 }
 
+// MessageDeliveryKind is what AO knows about a message right after accepting it.
+type MessageDeliveryKind string
+
+// Message delivery kinds.
+const (
+	// MessageDeliveryStarted means the message started a new Chat turn.
+	MessageDeliveryStarted MessageDeliveryKind = "started"
+	// MessageDeliveryQueued means the message waits behind a running Chat turn.
+	MessageDeliveryQueued MessageDeliveryKind = "queued"
+	// MessageDeliveryWaking means the message waits for a hibernated Chat
+	// session that is waking.
+	MessageDeliveryWaking MessageDeliveryKind = "waking"
+	// MessageDeliveryDeferred means the message is held until the session's
+	// interface switch finishes.
+	MessageDeliveryDeferred MessageDeliveryKind = "deferred"
+	// MessageDeliverySent means the message was written to the session's
+	// terminal.
+	MessageDeliverySent MessageDeliveryKind = "sent"
+)
+
+// MessageDeliveryOutcome reports how a message was accepted.
+type MessageDeliveryOutcome struct {
+	Kind MessageDeliveryKind
+	// TurnID is the Chat turn that carries the message.
+	TurnID string
+	// QueuePosition counts the pending queued Chat messages up to and including
+	// this one. Zero unless Kind is queued or waking.
+	QueuePosition int
+}
+
 // ChatTurnSettings are the per-turn choices a provider accepts alongside the
 // message text.
 //

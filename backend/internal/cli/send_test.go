@@ -639,3 +639,41 @@ func TestSendCarriesCooperativeSessionIdentity(t *testing.T) {
 		})
 	}
 }
+
+func TestSendPrintsDeliveryOutcome(t *testing.T) {
+	for _, tc := range []struct {
+		name, delivery, want string
+	}{
+		{name: "chat idle", delivery: `{"outcome":"started","turnId":"turn-1"}`,
+			want: "delivered: demo-1 started a new turn\n"},
+		{name: "chat busy", delivery: `{"outcome":"queued","turnId":"turn-2","queuePosition":2}`,
+			want: "queued: demo-1 is busy; delivered after its current turn (position 2 in queue)\n"},
+		{name: "chat busy without position", delivery: `{"outcome":"queued","turnId":"turn-2"}`,
+			want: "queued: demo-1 is busy; delivered after its current turn\n"},
+		{name: "chat waking", delivery: `{"outcome":"waking","turnId":"turn-3","queuePosition":1}`,
+			want: "queued: demo-1 is waking; delivered when it resumes (position 1 in queue)\n"},
+		{name: "interface switch", delivery: `{"outcome":"deferred"}`,
+			want: "queued: demo-1 is switching interface; delivered when the switch finishes\n"},
+		{name: "terminal", delivery: `{"outcome":"sent"}`,
+			want: "sent: written to demo-1's terminal\n"},
+		{name: "older daemon", want: ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("AO_SESSION_ID", "")
+			cfg := setConfigEnv(t)
+			resp := `{"ok":true,"sessionId":"demo-1","message":"continue"}`
+			if tc.delivery != "" {
+				resp = `{"ok":true,"sessionId":"demo-1","message":"continue","delivery":` + tc.delivery + `}`
+			}
+			srv, _ := sendServer(t, http.StatusOK, resp)
+			writeRunFileFor(t, cfg, srv)
+			out, stderr, err := executeCLI(t, Deps{ProcessAlive: func(int) bool { return true }}, "send", "--session", "demo-1", "--message", "continue")
+			if err != nil {
+				t.Fatalf("err=%v stderr=%s", err, stderr)
+			}
+			if out != tc.want {
+				t.Fatalf("stdout = %q, want %q", out, tc.want)
+			}
+		})
+	}
+}

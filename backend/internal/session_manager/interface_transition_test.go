@@ -785,10 +785,10 @@ func (c *transitionChat) StartChat(ctx context.Context, cfg ChatStart) (ChatStar
 func (*transitionChat) StartChatTurn(context.Context, domain.SessionID, string) (string, error) {
 	return "", nil
 }
-func (c *transitionChat) RelaySessionChatTurn(_ context.Context, _ domain.SessionID, text, clientMessageID string, _ ports.MessageDeliveryOptions) (string, error) {
+func (c *transitionChat) RelaySessionChatTurn(_ context.Context, _ domain.SessionID, text, clientMessageID string, _ ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	c.relayMessages = append(c.relayMessages, text)
 	c.relayIDs = append(c.relayIDs, clientMessageID)
-	return "", nil
+	return ports.MessageDeliveryOutcome{}, nil
 }
 func (*transitionChat) HasLiveChatController(domain.SessionID) bool { return false }
 func (c *transitionChat) StopChat(_ context.Context, _ domain.SessionID) error {
@@ -2845,8 +2845,12 @@ func TestSendQueuesDuringInterfaceTransition(t *testing.T) {
 		TargetMode: domain.SessionModeChat, Policy: domain.SessionInterfaceTransitionDrain,
 		Phase: domain.SessionInterfaceTransitionDraining, CreatedAt: now, UpdatedAt: now,
 	}
-	if err := manager.Send(context.Background(), "session-1", "CI failed on linux", nil); err != nil {
+	outcome, err := manager.SendWithOptions(context.Background(), "session-1", "CI failed on linux", nil, ports.MessageDeliveryOptions{})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if outcome.Kind != ports.MessageDeliveryDeferred {
+		t.Fatalf("outcome = %+v, want deferred until the interface switch finishes", outcome)
 	}
 	messages, err := store.ListPendingSessionInterfaceTransitionMessages(context.Background(), "transition-1")
 	if err != nil {
