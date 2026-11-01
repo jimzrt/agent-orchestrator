@@ -8122,6 +8122,12 @@ export interface components {
             state?: "queued" | "running" | "completed" | "recovered" | "interrupted" | "failed";
             turnId?: string;
         };
+        SendSessionMessageDelivery: {
+            /** @enum {string} */
+            outcome: "started" | "queued" | "waking" | "deferred" | "sent";
+            queuePosition?: number;
+            turnId?: string;
+        };
         SendSessionMessageRequest: {
             attachment?: components["schemas"]["AttachmentInput"];
             message: string;
@@ -8129,6 +8135,7 @@ export interface components {
             userAuthored?: boolean;
         };
         SendSessionMessageResponse: {
+            delivery?: components["schemas"]["SendSessionMessageDelivery"];
             message: string;
             ok: boolean;
             sessionId: string;

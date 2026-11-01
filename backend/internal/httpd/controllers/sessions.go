@@ -147,7 +147,7 @@ type SessionService interface {
 }
 
 type sessionMessageOptionsSender interface {
-	SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) error
+	SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error)
 }
 
 // ActivityRecorder applies an agent activity-state signal to a session. It is
@@ -2257,13 +2257,14 @@ func (c *SessionsController) send(w http.ResponseWriter, r *http.Request) {
 	}
 	message := domain.SanitizeControlChars(in.Message)
 	var err error
+	var outcome ports.MessageDeliveryOutcome
 	if in.UserAuthored || in.SenderSessionID != "" {
 		sender, ok := c.Svc.(sessionMessageOptionsSender)
 		if !ok {
 			apispec.NotImplemented(w, r, "POST", "/api/v1/sessions/{sessionId}/send")
 			return
 		}
-		err = sender.SendWithOptions(r.Context(), sessionID(r), message, attachment, ports.MessageDeliveryOptions{AuthoredByUser: in.UserAuthored, SenderSessionID: in.SenderSessionID})
+		outcome, err = sender.SendWithOptions(r.Context(), sessionID(r), message, attachment, ports.MessageDeliveryOptions{AuthoredByUser: in.UserAuthored, SenderSessionID: in.SenderSessionID})
 	} else {
 		err = c.Svc.Send(r.Context(), sessionID(r), message, attachment)
 	}
@@ -2274,7 +2275,14 @@ func (c *SessionsController) send(w http.ResponseWriter, r *http.Request) {
 	if recorder, ok := c.Svc.(UserMessageRecorder); ok {
 		recordUserMessage(r.Context(), recorder, sessionID(r), in.SenderSessionID, false)
 	}
-	envelope.WriteJSON(w, http.StatusOK, SendSessionMessageResponse{OK: true, SessionID: sessionID(r), Message: message})
+	envelope.WriteJSON(w, http.StatusOK, SendSessionMessageResponse{OK: true, SessionID: sessionID(r), Message: message, Delivery: sendDelivery(outcome)})
+}
+
+func sendDelivery(outcome ports.MessageDeliveryOutcome) *SendSessionMessageDelivery {
+	if outcome.Kind == "" {
+		return nil
+	}
+	return &SendSessionMessageDelivery{Outcome: string(outcome.Kind), TurnID: outcome.TurnID, QueuePosition: outcome.QueuePosition}
 }
 
 func (c *SessionsController) delegateTask(w http.ResponseWriter, r *http.Request) {

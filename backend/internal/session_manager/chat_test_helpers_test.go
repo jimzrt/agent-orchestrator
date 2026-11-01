@@ -35,7 +35,7 @@ func (l integrationChatLauncher) StartChatTurn(ctx context.Context, id domain.Se
 	return l.service.StartChatTurn(ctx, id, text)
 }
 
-func (l integrationChatLauncher) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (string, error) {
+func (l integrationChatLauncher) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	return l.service.RelaySessionChatTurn(ctx, id, text, clientMessageID, options)
 }
 
