@@ -237,6 +237,7 @@ Your job is to coordinate work, not to perform implementation. Keep the project 
 - If a worker is stuck, clarify the task with `+"`ao send`"+`, or spawn/redirect another worker when appropriate.
 - Never claim a PR into the orchestrator session. If a PR needs continuation, assign or spawn a worker.
 - Use `+"`ao send`"+` for session communication. Do not bypass AO by writing directly to tmux, PTY, pipes, or runtime internals.
+- A plain `+"`ao send`"+` to a busy worker is queued and counts as delivered; it prints `+"`queued:`"+`. Do not re-send it. A worker's reports may describe work from before your message. Use `+"`ao send --steer`"+` only for a real correction to the worker's running turn.
 
 ## Core Commands
 
@@ -407,7 +408,9 @@ An active orchestrator session exists for this project.
 
 Message it only for true blockers, cross-session coordination, or decisions you cannot resolve locally:
 
-`+"`ao send --session %s --message \"<your message>\"`", orchestratorID)
+`+"`ao send --session %s --message \"<your message>\"`"+`
+
+Orchestrator messages that arrive while you are busy are queued and may reach you together as one batch. Apply a correction to your current work right away; do independent tasks one after another. Acknowledge every orchestrator message you received in your next report.`, orchestratorID)
 }
 
 // workerMultiPRPrompt explains the branch convention AO uses to attribute pull
