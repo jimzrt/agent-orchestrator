@@ -7,6 +7,27 @@ running turn, the message is queued and delivered as its own turn after the
 current turn ends; it does not reach the running turn. To correct or redirect
 an agent mid-turn, use `--steer`.
 
+## Output
+
+Plain `ao send` prints how the daemon accepted the message:
+
+| Output | Meaning |
+|---|---|
+| `delivered: <session> started a new turn` | The Chat session was idle; the message started a turn |
+| `queued: <session> is busy; delivered after its current turn (position N in queue)` | The message waits behind the running Chat turn. N counts pending queued messages, including this one |
+| `queued: <session> is waking; delivered when it resumes (position N in queue)` | The Chat session was hibernated and is waking |
+| `queued: <session> is switching interface; delivered when the switch finishes` | The session is moving between Chat and terminal |
+| `sent: written to <session>'s terminal` | The message was written to a terminal session |
+
+A queued message counts as delivered. Do not re-send it: queued messages reach
+the agent together, as one batch, after its current turn. Reports and messages
+from that agent may still describe work from before your message. Use
+`--steer` only for a real correction to the running turn.
+
+When you receive messages as a batch, apply a correction to your current work
+right away, do independent tasks one after another, and acknowledge every
+message you received in your next report.
+
 ## Syntax
 
 ```
