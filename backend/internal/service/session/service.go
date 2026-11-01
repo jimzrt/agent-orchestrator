@@ -97,7 +97,7 @@ type commander interface {
 	RetireForReplacement(ctx context.Context, id domain.SessionID) error
 	WaitForMessageDeliveryReady(ctx context.Context, id domain.SessionID) error
 	Send(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment) error
-	SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) error
+	SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error)
 	Cleanup(ctx context.Context, project domain.ProjectID) (sessionmanager.CleanupResult, error)
 	RollbackSpawn(ctx context.Context, id domain.SessionID) (deleted, killed bool, err error)
 	StageAttachments(ctx context.Context, id domain.SessionID, attachments []ports.SpawnAttachment) ([]string, error)
@@ -1388,9 +1388,11 @@ func (s *Service) Send(ctx context.Context, id domain.SessionID, message string,
 	return toAPIError(s.manager.Send(ctx, id, message, attachment))
 }
 
-// SendWithOptions preserves authorship facts supplied by trusted UI surfaces.
-func (s *Service) SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) error {
-	return toAPIError(s.manager.SendWithOptions(ctx, id, message, attachment, options))
+// SendWithOptions preserves authorship facts supplied by trusted UI surfaces
+// and reports how the message was accepted.
+func (s *Service) SendWithOptions(ctx context.Context, id domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
+	outcome, err := s.manager.SendWithOptions(ctx, id, message, attachment, options)
+	return outcome, toAPIError(err)
 }
 
 // Rename updates the user-facing session display name.
