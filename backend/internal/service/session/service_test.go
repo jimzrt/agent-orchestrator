@@ -2872,8 +2872,8 @@ func (f *fakeCommander) Send(_ context.Context, id domain.SessionID, message str
 	f.sentMessages = append(f.sentMessages, message)
 	return nil
 }
-func (f *fakeCommander) SendWithOptions(_ context.Context, id domain.SessionID, message string, _ *ports.SpawnAttachment, _ ports.MessageDeliveryOptions) error {
-	return f.Send(context.Background(), id, message, nil)
+func (f *fakeCommander) SendWithOptions(_ context.Context, id domain.SessionID, message string, _ *ports.SpawnAttachment, _ ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
+	return ports.MessageDeliveryOutcome{}, f.Send(context.Background(), id, message, nil)
 }
 func (f *fakeCommander) RunBackgroundTask(ctx context.Context, id domain.SessionID, systemPrompt, prompt string) (string, error) {
 	call := backgroundTaskCall{
@@ -4179,7 +4179,8 @@ func TestSendWithoutChatControllerIsControllerNotReady(t *testing.T) {
 		for name, send := range map[string]func() error{
 			"send": func() error { return svc.Send(context.Background(), "mer-1", "hello", nil) },
 			"send with options": func() error {
-				return svc.SendWithOptions(context.Background(), "mer-1", "hello", nil, ports.MessageDeliveryOptions{AuthoredByUser: true})
+				_, err := svc.SendWithOptions(context.Background(), "mer-1", "hello", nil, ports.MessageDeliveryOptions{AuthoredByUser: true})
+				return err
 			},
 		} {
 			t.Run(sentinel.Error()+"/"+name, func(t *testing.T) {

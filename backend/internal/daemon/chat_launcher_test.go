@@ -31,11 +31,11 @@ func TestChatLauncherForwardsSessionRelay(t *testing.T) {
 		{name: "user-authored outbox replay", clientID: "queued-message-1", options: ports.MessageDeliveryOptions{AuthoredByUser: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			id, err := launcher.RelaySessionChatTurn(context.Background(), created.ID, "direction", tc.clientID, tc.options)
+			outcome, err := launcher.RelaySessionChatTurn(context.Background(), created.ID, "direction", tc.clientID, tc.options)
 			// No controller was started: reaching this service error proves forwarding
 			// across the real wrapper instead of failing with session relay unavailable.
-			if id != "" || !errors.Is(err, chatsvc.ErrNoController) {
-				t.Fatalf("relay = (%q, %v), want chat service's missing-controller error", id, err)
+			if outcome.TurnID != "" || !errors.Is(err, chatsvc.ErrNoController) {
+				t.Fatalf("relay = (%+v, %v), want chat service's missing-controller error", outcome, err)
 			}
 		})
 	}

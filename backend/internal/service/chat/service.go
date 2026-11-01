@@ -2919,7 +2919,8 @@ func (s *Service) persistPickedModel(id domain.SessionID, previous, next domain.
 // Delivery follows the same rules as any other send: a message arriving mid-turn
 // queues instead of racing the running turn.
 func (s *Service) RelayChatTurn(ctx context.Context, id domain.SessionID, text string) (string, error) {
-	return s.relayChatTurn(ctx, id, text, "", ports.MessageDeliveryOptions{})
+	outcome, err := s.relayChatTurn(ctx, id, text, "", ports.MessageDeliveryOptions{})
+	return outcome.TurnID, err
 }
 
 // RelayChatTurnWithID is RelayChatTurn with a durable caller-supplied
@@ -2931,13 +2932,15 @@ func (s *Service) RelayChatTurnWithID(
 	id domain.SessionID,
 	text, clientMessageID string,
 ) (string, error) {
-	return s.relayChatTurn(ctx, id, text, clientMessageID, ports.MessageDeliveryOptions{})
+	outcome, err := s.relayChatTurn(ctx, id, text, clientMessageID, ports.MessageDeliveryOptions{})
+	return outcome.TurnID, err
 }
 
 // RelayUserAuthoredChatTurn delivers user-written content through AO's relay
 // path without changing its automation delivery attribution.
 func (s *Service) RelayUserAuthoredChatTurn(ctx context.Context, id domain.SessionID, text string) (string, error) {
-	return s.relayChatTurn(ctx, id, text, "", ports.MessageDeliveryOptions{AuthoredByUser: true})
+	outcome, err := s.relayChatTurn(ctx, id, text, "", ports.MessageDeliveryOptions{AuthoredByUser: true})
+	return outcome.TurnID, err
 }
 
 func (s *Service) relayChatTurn(
@@ -2945,7 +2948,7 @@ func (s *Service) relayChatTurn(
 	id domain.SessionID,
 	text, clientMessageID string,
 	options ports.MessageDeliveryOptions,
-) (string, error) {
+) (ports.MessageDeliveryOutcome, error) {
 	msg := s.resolveSteerSender(ctx, ports.ChatUserMessage{
 		Text: text, ClientMessageID: clientMessageID,
 		SenderSessionID: options.SenderSessionID, InteractionAt: options.InteractionAt,
@@ -2958,11 +2961,11 @@ func (s *Service) relayChatTurn(
 	// lease to drain.
 	for {
 		if err := ctx.Err(); err != nil {
-			return "", err
+			return ports.MessageDeliveryOutcome{}, err
 		}
 		record, err := s.requireChatSession(ctx, id)
 		if err != nil {
-			return "", err
+			return ports.MessageDeliveryOutcome{}, err
 		}
 		if record.HibernatedAt != nil {
 			turn, err := s.queueWithoutController(ctx, record, msg, false)
@@ -2970,10 +2973,10 @@ func (s *Service) relayChatTurn(
 				if turn.ID != "" {
 					s.startBackgroundWake(id)
 				}
-				return turn.ID, nil
+				return s.relayOutcome(ctx, turn, ports.MessageDeliveryWaking), nil
 			}
 			if !errors.Is(err, ErrNotProvisioning) {
-				return "", err
+				return ports.MessageDeliveryOutcome{}, err
 			}
 			// The store refused a stale queue append: the session woke after the
 			// read, so its controller takes the message.
@@ -2984,19 +2987,45 @@ func (s *Service) relayChatTurn(
 			continue
 		}
 		if err != nil {
-			return "", err
+			return ports.MessageDeliveryOutcome{}, err
 		}
 		turn, err := controller.Send(ctx, msg)
 		release()
 		if err != nil {
-			return "", err
+			return ports.MessageDeliveryOutcome{}, err
 		}
-		return turn.ID, nil
+		return s.relayOutcome(ctx, turn, ports.MessageDeliveryQueued), nil
 	}
 }
 
+// relayOutcome describes an accepted relay turn. A queued turn reports its
+// place in the queue; one that already left the queue was claimed by a drain,
+// so it rides in a started turn. queuedKind names why the turn waits. A
+// duplicate delivery has no new turn and reports no kind.
+func (s *Service) relayOutcome(ctx context.Context, turn domain.ConversationTurn, queuedKind ports.MessageDeliveryKind) ports.MessageDeliveryOutcome {
+	if turn.ID == "" {
+		return ports.MessageDeliveryOutcome{}
+	}
+	outcome := ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryStarted, TurnID: turn.ID}
+	if turn.State != domain.TurnStateQueued {
+		return outcome
+	}
+	queue, err := s.store.ListQueuedBatch(ctx, turn.ConversationID, 0)
+	if err != nil && !errors.Is(err, domain.ErrNoQueuedTurn) {
+		// The message is already accepted; the position is only a report.
+		s.log.Warn("relay: read queue position", "turn", turn.ID, "error", err)
+		return ports.MessageDeliveryOutcome{Kind: queuedKind, TurnID: turn.ID}
+	}
+	for i, queued := range queue {
+		if queued.TurnID == turn.ID {
+			return ports.MessageDeliveryOutcome{Kind: queuedKind, TurnID: turn.ID, QueuePosition: i + 1}
+		}
+	}
+	return outcome
+}
+
 // RelaySessionChatTurn preserves cooperative sender identity and automation origin.
-func (s *Service) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (string, error) {
+func (s *Service) RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	return s.relayChatTurn(ctx, id, text, clientMessageID, options)
 }
 
