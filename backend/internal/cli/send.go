@@ -29,6 +29,15 @@ type sendAPIRequest struct {
 	Message         string `json:"message"`
 }
 
+// sendAPIResponse mirrors the daemon's SendSessionMessageResponse. Delivery is
+// absent from older daemons and for a duplicate delivery.
+type sendAPIResponse struct {
+	Delivery *struct {
+		Outcome       string `json:"outcome"`
+		QueuePosition int    `json:"queuePosition"`
+	} `json:"delivery"`
+}
+
 // The steering DTOs mirror the daemon conversation API without coupling the
 // thin CLI to the HTTP controller package.
 type conversationMessageAPIRequest struct {
@@ -91,9 +100,42 @@ func (c *commandContext) sendMessage(ctx context.Context, opts sendOptions) erro
 	// from sanitized issue refs; keep the URL well-formed regardless.
 	path := "sessions/" + url.PathEscape(session)
 	if !opts.steer {
-		return c.postJSON(ctx, path+"/send", sendAPIRequest{Message: message, SenderSessionID: strings.TrimSpace(os.Getenv("AO_SESSION_ID")), UserAuthored: strings.TrimSpace(os.Getenv("AO_SESSION_ID")) == ""}, nil)
+		var result sendAPIResponse
+		if err := c.postJSON(ctx, path+"/send", sendAPIRequest{Message: message, SenderSessionID: strings.TrimSpace(os.Getenv("AO_SESSION_ID")), UserAuthored: strings.TrimSpace(os.Getenv("AO_SESSION_ID")) == ""}, &result); err != nil {
+			return err
+		}
+		if line := sendOutcomeLine(session, result); line != "" {
+			_, _ = fmt.Fprintln(c.deps.Out, line)
+		}
+		return nil
 	}
 	return c.steerMessage(ctx, path, message, strings.TrimSpace(opts.clientMessageID), opts.recoverOnly)
+}
+
+// sendOutcomeLine states what the daemon knows about a plain send, so a sender
+// can tell a queued message from one that was ignored.
+func sendOutcomeLine(session string, result sendAPIResponse) string {
+	if result.Delivery == nil {
+		return ""
+	}
+	position := ""
+	if result.Delivery.QueuePosition > 0 {
+		position = fmt.Sprintf(" (position %d in queue)", result.Delivery.QueuePosition)
+	}
+	switch result.Delivery.Outcome {
+	case "started":
+		return "delivered: " + session + " started a new turn"
+	case "queued":
+		return "queued: " + session + " is busy; delivered after its current turn" + position
+	case "waking":
+		return "queued: " + session + " is waking; delivered when it resumes" + position
+	case "deferred":
+		return "queued: " + session + " is switching interface; delivered when the switch finishes"
+	case "sent":
+		return "sent: written to " + session + "'s terminal"
+	default:
+		return ""
+	}
 }
 
 func (c *commandContext) steerMessage(

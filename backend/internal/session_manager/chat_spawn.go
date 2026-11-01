@@ -43,7 +43,7 @@ type ChatLauncher interface {
 	StartChatTurn(ctx context.Context, id domain.SessionID, text string) (string, error)
 	// RelaySessionChatTurn preserves delivery identity, authorship, and acceptance
 	// time. A durable clientMessageID makes queued retries idempotent.
-	RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (string, error)
+	RelaySessionChatTurn(ctx context.Context, id domain.SessionID, text, clientMessageID string, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error)
 	// HasLiveChatController reports whether the daemon still owns a controller
 	// for the session. Resume uses this to distinguish a stale durable activity
 	// state left by an older daemon from a genuinely live controller.
@@ -404,26 +404,27 @@ func (m *Manager) stopChatBestEffort(ctx context.Context, id domain.SessionID) {
 // receive a message, and one whose controller is gone cannot either. Busy is not
 // a refusal — the controller queues a mid-turn message, which is strictly better
 // than the terminal path's habit of dropping a nudge it cannot safely deliver.
-func (m *Manager) sendChat(ctx context.Context, id domain.SessionID, message, clientMessageID string, options ports.MessageDeliveryOptions) (bool, error) {
+// The outcome says whether the message started a turn or waits in the queue.
+func (m *Manager) sendChat(ctx context.Context, id domain.SessionID, message, clientMessageID string, options ports.MessageDeliveryOptions) (bool, ports.MessageDeliveryOutcome, error) {
 	rec, ok, err := m.store.GetSession(ctx, id)
 	if err != nil {
-		return false, fmt.Errorf("send %s: session: %w", id, err)
+		return false, ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: session: %w", id, err)
 	}
 	if !ok || domain.NormalizeSessionMode(rec.Mode) != domain.SessionModeChat {
-		return false, nil
+		return false, ports.MessageDeliveryOutcome{}, nil
 	}
 	if m.chat == nil {
-		return true, fmt.Errorf("send %s: %w: chat mode is not available in this build",
+		return true, ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: %w: chat mode is not available in this build",
 			id, ports.ErrChatUnsupported)
 	}
 	if rec.IsTerminated {
-		return true, fmt.Errorf("send %s: %w", id, ErrTerminated)
+		return true, ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: %w", id, ErrTerminated)
 	}
-	_, relayErr := m.chat.RelaySessionChatTurn(ctx, id, message, clientMessageID, options)
+	outcome, relayErr := m.chat.RelaySessionChatTurn(ctx, id, message, clientMessageID, options)
 	if relayErr != nil {
-		return true, fmt.Errorf("send %s: %w", id, relayErr)
+		return true, ports.MessageDeliveryOutcome{}, fmt.Errorf("send %s: %w", id, relayErr)
 	}
-	return true, nil
+	return true, outcome, nil
 }
 
 // SessionModeDefaults supplies the daemon-owned default session interface.

@@ -20132,6 +20132,23 @@ components:
       required:
       - duplicate
       type: object
+    SendSessionMessageDelivery:
+      properties:
+        outcome:
+          enum:
+          - started
+          - queued
+          - waking
+          - deferred
+          - sent
+          type: string
+        queuePosition:
+          type: integer
+        turnId:
+          type: string
+      required:
+      - outcome
+      type: object
     SendSessionMessageRequest:
       properties:
         attachment:
@@ -20149,6 +20166,8 @@ components:
       type: object
     SendSessionMessageResponse:
       properties:
+        delivery:
+          $ref: '#/components/schemas/SendSessionMessageDelivery'
         message:
           type: string
         ok:

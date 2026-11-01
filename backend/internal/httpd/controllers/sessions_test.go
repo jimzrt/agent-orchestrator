@@ -61,6 +61,7 @@ type fakeSessionService struct {
 	sent                       string
 	sentAttachment             *ports.SpawnAttachment
 	sentDeliveryOptions        ports.MessageDeliveryOptions
+	sendOutcome                ports.MessageDeliveryOutcome
 	delegationInput            sessionsvc.DelegateTaskInput
 	delegationErr              error
 	preparedProject            domain.ProjectID
@@ -486,11 +487,11 @@ func (f *fakeSessionService) Send(_ context.Context, _ domain.SessionID, message
 	return nil
 }
 
-func (f *fakeSessionService) SendWithOptions(_ context.Context, _ domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) error {
+func (f *fakeSessionService) SendWithOptions(_ context.Context, _ domain.SessionID, message string, attachment *ports.SpawnAttachment, options ports.MessageDeliveryOptions) (ports.MessageDeliveryOutcome, error) {
 	f.sent = message
 	f.sentAttachment = attachment
 	f.sentDeliveryOptions = options
-	return nil
+	return f.sendOutcome, nil
 }
 
 func (f *fakeSessionService) DelegateTask(_ context.Context, in sessionsvc.DelegateTaskInput) (sessionsvc.DelegateTaskOutcome, error) {
@@ -5248,6 +5249,40 @@ func TestSessionsAPI_SendCarriesCooperativeSenderWithoutHumanAuthorship(t *testi
 	}
 	if svc.sentDeliveryOptions.SenderSessionID != "ao-orchestrator" || svc.sentDeliveryOptions.AuthoredByUser {
 		t.Fatalf("options=%+v", svc.sentDeliveryOptions)
+	}
+}
+
+func TestSessionsAPI_SendReportsDeliveryOutcome(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		outcome ports.MessageDeliveryOutcome
+		want    string
+	}{
+		{name: "started", outcome: ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryStarted, TurnID: "turn-1"},
+			want: `"delivery":{"outcome":"started","turnId":"turn-1"}`},
+		{name: "queued", outcome: ports.MessageDeliveryOutcome{Kind: ports.MessageDeliveryQueued, TurnID: "turn-2", QueuePosition: 2},
+			want: `"delivery":{"outcome":"queued","turnId":"turn-2","queuePosition":2}`},
+		{name: "terminal", outcome: ports.MessageDeliveryOutcome{Kind: ports.MessageDeliverySent},
+			want: `"delivery":{"outcome":"sent"}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := newFakeSessionService()
+			svc.sendOutcome = tc.outcome
+			srv := newSessionTestServer(t, svc)
+			body, status, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/send", `{"message":"Do the next step","senderSessionId":"ao-orchestrator"}`)
+			if status != http.StatusOK {
+				t.Fatalf("status=%d body=%s", status, body)
+			}
+			if !strings.Contains(string(body), tc.want) {
+				t.Fatalf("body=%s, want %s", body, tc.want)
+			}
+		})
+	}
+	svc := newFakeSessionService()
+	srv := newSessionTestServer(t, svc)
+	body, _, _ := doRequest(t, srv, "POST", "/api/v1/sessions/ao-1/send", `{"message":"Do the next step","senderSessionId":"ao-orchestrator"}`)
+	if strings.Contains(string(body), "delivery") {
+		t.Fatalf("body=%s, want no delivery without an outcome", body)
 	}
 }
 
