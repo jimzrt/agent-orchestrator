@@ -266,7 +266,7 @@ func TestInteractiveNativeFailureCleanupAndRetryState(t *testing.T) {
 							t.Fatal("cleanup failure did not quarantine agent input", rec)
 						}
 						before := len(msg.msgs)
-						if sendErr := m.SendWithOptions(ctx, "mer-1", "must not reach unverified runtime", nil, ports.MessageDeliveryOptions{AuthoredByUser: true}); !errors.Is(sendErr, wantSendErr) {
+						if _, sendErr := m.SendWithOptions(ctx, "mer-1", "must not reach unverified runtime", nil, ports.MessageDeliveryOptions{AuthoredByUser: true}); !errors.Is(sendErr, wantSendErr) {
 							t.Fatalf("send after cleanup failure = %v, want %v", sendErr, wantSendErr)
 						}
 						if len(msg.msgs) != before {
@@ -320,7 +320,7 @@ func TestNativeMemcodeDecisionRefusesOrdinarySend(t *testing.T) {
 	r := st.sessions["mer-1"]
 	r.Activity.State = domain.ActivityBlocked
 	st.sessions[r.ID] = r
-	err := m.SendWithOptions(ctx, r.ID, "another task", nil, ports.MessageDeliveryOptions{AuthoredByUser: true})
+	_, err := m.SendWithOptions(ctx, r.ID, "another task", nil, ports.MessageDeliveryOptions{AuthoredByUser: true})
 	if !errors.Is(err, ErrAwaitingDecision) || len(msg.msgs) != 0 {
 		t.Fatal("pending decision received task input", err, msg.msgs)
 	}
