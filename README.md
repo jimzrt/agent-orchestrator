@@ -34,17 +34,17 @@
 > [!WARNING]
 > **Custom build.** This branch is a personal custom build of Agent
 > Orchestrator, not an official release. It is upstream `main` at
-> [`e8e3342d3`](https://github.com/OrchestratorInc/agent-orchestrator/commit/e8e3342d3fff2112ca64764a7254000f2d637f68)
-> plus these open upstream PRs:
+> [`5cde191aa`](https://github.com/OrchestratorInc/agent-orchestrator/commit/5cde191aad88cf58867c49e5a841f24816815118)
+> plus these open upstream PRs (at the listed head):
 >
-> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614): flush done reports early once no other worker is working
-> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821): Codex reviewer result submit fixes
-> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831): deliver a PR's review feedback as one batched message
-> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955): tell the worker when an AO review run finishes
+> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614) @ `f422cbffd`: flush done reports early once no other worker is working
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821) @ `fcb92bd4a`: Codex reviewer result submit fixes
+> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831) @ `70127b99b`: deliver a PR's review feedback as one batched message
+> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955) @ `9f643ef35`: tell the worker when an AO review run finishes
 >
 > and one local change that is not an upstream PR yet:
 >
-> - queue-aware `ao send` (local): a plain `ao send` to a busy Chat session says it was queued and at which position
+> - queue-aware `ao send` (local, @ `8a6b9fddc`): a plain `ao send` to a busy Chat session says it was queued and at which position
 >
 > [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956) (find a just-opened PR when `ao review trigger` runs) was in earlier custom builds and is now merged upstream.
 >
