@@ -1078,7 +1078,7 @@ func TestReviewNoticeChatDeliveryReadsABatchedTurn(t *testing.T) {
 	if err := s.BindTurnToProvider(ctx, batch[0].TurnID, "provider-turn-1", histClock.Add(time.Minute)); err != nil {
 		t.Fatalf("bind: %v", err)
 	}
-	if err := s.CompleteQueuedBatch(ctx, conversation, []string{batch[1].TurnID}, "provider-turn-1", histClock.Add(time.Minute)); err != nil {
+	if err := s.CompleteQueuedBatch(ctx, conversation, []string{batch[1].TurnID}, "provider-turn-1", "", histClock.Add(time.Minute)); err != nil {
 		t.Fatalf("complete batch: %v", err)
 	}
 	state, failure, found, err := s.ReviewNoticeChatDelivery(ctx, session, "review-done:run-1:0")
