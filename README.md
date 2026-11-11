@@ -34,7 +34,7 @@
 > [!WARNING]
 > **Custom build.** This branch is a personal custom build of Agent
 > Orchestrator, not an official release. It is upstream `main` at
-> [`6b8d13d88`](https://github.com/OrchestratorInc/agent-orchestrator/commit/6b8d13d88102ced4e6feed28ac69441e0f568b4f)
+> [`400d01346`](https://github.com/OrchestratorInc/agent-orchestrator/commit/400d0134656b6215517736ba58e041345199ee19)
 > plus these open upstream PRs (at the listed head):
 >
 > - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614) @ `f422cbffd`: flush done reports early once no other worker is working
