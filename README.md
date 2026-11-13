@@ -34,14 +34,19 @@
 > [!WARNING]
 > **Custom build.** This branch is a personal custom build of Agent
 > Orchestrator, not an official release. It is upstream `main` at
-> [`12e1fd738`](https://github.com/OrchestratorInc/agent-orchestrator/commit/12e1fd738b6a92847b22b2813f73b01ef93a2936)
-> plus these open upstream PRs:
+> [`304995a51`](https://github.com/OrchestratorInc/agent-orchestrator/commit/304995a5143e43e2fe1f4af00d4da8b50db9ea1f)
+> plus these open upstream PRs (at the listed head):
 >
-> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614): flush done reports early once no other worker is working
-> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821): Codex reviewer result submit fixes
-> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831): deliver a PR's review feedback as one batched message
-> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955): tell the worker when an AO review run finishes
-> - [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956): find a just-opened PR when `ao review trigger` runs
+> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614) @ `f422cbffd`: flush done reports early once no other worker is working
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821) @ `fcb92bd4a`: Codex reviewer result submit fixes
+> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831) @ `70127b99b`: deliver a PR's review feedback as one batched message
+> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955) @ `9f643ef35`: tell the worker when an AO review run finishes
+>
+> and one local change that is not an upstream PR yet:
+>
+> - queue-aware `ao send` (local, @ `8a6b9fddc`): a plain `ao send` to a busy Chat session says it was queued and at which position
+>
+> [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956) (find a just-opened PR when `ao review trigger` runs) was in earlier custom builds and is now merged upstream.
 >
 > **Auto-update is off.** The build bakes in an update feed that doesn't exist,
 > so it never updates itself. To update, install a newer custom build by hand.
