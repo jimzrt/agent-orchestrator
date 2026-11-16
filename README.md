@@ -42,9 +42,10 @@
 > - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831) @ `70127b99b`: deliver a PR's review feedback as one batched message
 > - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955) @ `9f643ef35`: tell the worker when an AO review run finishes
 >
-> and one local change that is not an upstream PR yet:
+> and local changes that are not upstream PRs yet:
 >
 > - queue-aware `ao send` (local, @ `8a6b9fddc`): a plain `ao send` to a busy Chat session says it was queued and at which position
+> - on top of the upstream PR-author reply filter ([#8462](https://github.com/OrchestratorInc/agent-orchestrator/pull/8462)), an AO reviewer comment that lands in an existing review thread is still forwarded to the worker (the AO reviewer posts as the PR author)
 >
 > [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956) (find a just-opened PR when `ao review trigger` runs) was in earlier custom builds and is now merged upstream.
 >
