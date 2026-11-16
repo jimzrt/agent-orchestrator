@@ -196,7 +196,7 @@ func (m *Manager) ApplyPRObservation(ctx context.Context, id domain.SessionID, o
 		if pr, ok, err := m.store.GetPR(ctx, o.URL); err == nil && ok {
 			prAuthor = pr.Author
 		}
-		o.Comments = prCommentObservations(withoutPRAuthorReplies(comments, prAuthor))
+		o.Comments = prCommentObservations(withoutPRAuthorReplies(comments, prAuthor, m.aoReviewCommentKeeper(ctx, id, o.URL)))
 
 		if o.CI == domain.CIFailing {
 			pr, ok, err := m.store.GetPR(ctx, o.URL)
@@ -673,8 +673,9 @@ func scmToPRObservation(o ports.SCMObservation) ports.PRObservation {
 // worker answering feedback (or the author answering it), not feedback for
 // the worker. A thread the author starts is kept: that is the author
 // reviewing their own PR, which the worker should act on. Comments arrive
-// oldest first, so a thread's first comment is its root.
-func withoutPRAuthorReplies(comments []domain.PullRequestComment, prAuthor string) []domain.PullRequestComment {
+// oldest first, so a thread's first comment is its root. Comments that keep
+// reports true for are never dropped (local build: AO review comments).
+func withoutPRAuthorReplies(comments []domain.PullRequestComment, prAuthor string, keep ...func(domain.PullRequestComment) bool) []domain.PullRequestComment {
 	author := normalizeCommentAuthor(prAuthor)
 	if author == "" {
 		return comments
@@ -687,12 +688,43 @@ func withoutPRAuthorReplies(comments []domain.PullRequestComment, prAuthor strin
 		if thread != "" {
 			seenThread[thread] = true
 		}
-		if reply && normalizeCommentAuthor(comment.Author) == author {
+		if reply && normalizeCommentAuthor(comment.Author) == author && !keptComment(comment, keep) {
 			continue
 		}
 		out = append(out, comment)
 	}
 	return out
+}
+
+func keptComment(comment domain.PullRequestComment, keep []func(domain.PullRequestComment) bool) bool {
+	for _, fn := range keep {
+		if fn != nil && fn(comment) {
+			return true
+		}
+	}
+	return false
+}
+
+// aoReviewCommentKeeper reports whether a comment belongs to one of the
+// worker's AO review runs (its ReviewID is a run's github_review_id). The AO
+// reviewer posts with the PR author's account, so a finding it adds to an
+// existing thread looks like an author reply and must still reach the worker.
+// The run lookup is lazy: it only happens once a reply by the author is seen.
+func (m *Manager) aoReviewCommentKeeper(ctx context.Context, id domain.SessionID, prURL string) func(domain.PullRequestComment) bool {
+	var ids map[string]bool
+	return func(comment domain.PullRequestComment) bool {
+		reviewID := strings.TrimSpace(comment.ReviewID)
+		if reviewID == "" {
+			return false
+		}
+		if ids == nil {
+			ids = map[string]bool{}
+			for _, rid := range m.aoReviewIDs(ctx, id, prURL) {
+				ids[rid] = true
+			}
+		}
+		return ids[reviewID]
+	}
 }
 
 // normalizeCommentAuthor compares logins as GitHub does: case-insensitive,
