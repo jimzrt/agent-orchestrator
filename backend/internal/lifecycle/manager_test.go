@@ -2519,8 +2519,9 @@ func TestPRObservation_PRAuthorRepliesAreNotInjected(t *testing.T) {
 			t.Fatalf("missing %q from nudges:\n%s", want, all)
 		}
 	}
-	if len(msg.msgs) != 5 {
-		t.Fatalf("want 5 per-comment nudges, got %d:\n%s", len(msg.msgs), all)
+	// #6831 delivers one batched message instead of one nudge per comment.
+	if len(msg.msgs) != 1 {
+		t.Fatalf("want 1 batched message, got %d:\n%s", len(msg.msgs), all)
 	}
 }
 
