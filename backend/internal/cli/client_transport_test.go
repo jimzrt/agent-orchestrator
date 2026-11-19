@@ -299,8 +299,9 @@ func TestTransportReachesDaemonWhosePIDIsHidden(t *testing.T) {
 			t.Cleanup(srv.Close)
 			writeRunFileFor(t, cfg, srv)
 			c := &commandContext{deps: Deps{
-				HTTPClient:   &http.Client{},
-				ProcessAlive: func(int) bool { return false },
+				HTTPClient:     &http.Client{},
+				ProcessAlive:   func(int) bool { return false },
+				PIDMayBeHidden: func() bool { return true },
 			}}
 
 			err := c.postJSON(ctx, "sessions/ao-1/activity", struct{}{}, nil)

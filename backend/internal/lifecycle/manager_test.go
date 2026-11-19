@@ -2744,19 +2744,19 @@ func TestPRObservation_ReviewNudgesCarryProviderTime(t *testing.T) {
 	if err := m.ApplyPRObservation(ctx, "mer-1", o); err != nil {
 		t.Fatal(err)
 	}
-	if len(msg.msgs) != 2 {
-		t.Fatalf("want comment and review nudges, got %v", msg.msgs)
+	if len(msg.msgs) != 1 {
+		t.Fatalf("want one batched feedback nudge, got %v", msg.msgs)
 	}
-	// The time ends the first line, where older chat clients do not look; the
-	// comment heading keeps the shape they parse.
+	// The newest comment time ends the first line, where older chat clients do
+	// not look; the review header carries its own submitted time.
 	if first := strings.SplitN(msg.msgs[0], "\n", 2)[0]; !strings.HasSuffix(first, " Newest comment posted at 2026-11-16T02:24:42Z.") {
-		t.Fatalf("comment nudge first line missing UTC posted time: %q", first)
+		t.Fatalf("batched nudge first line missing UTC posted time: %q", first)
 	}
 	if !strings.Contains(msg.msgs[0], "\n1. telemetry.ts:12 (@alice):\nfix this") {
 		t.Fatalf("comment heading changed shape:\n%s", msg.msgs[0])
 	}
-	if first := strings.SplitN(msg.msgs[1], "\n", 2)[0]; first != "A changes-requested review from @bob is on your PR. Submitted at 2026-11-16T07:54:41Z." {
-		t.Fatalf("review nudge first line missing submitted time: %q", first)
+	if !strings.Contains(msg.msgs[0], "Review from @bob (changes requested), submitted at 2026-11-16T07:54:41Z:") {
+		t.Fatalf("review header missing submitted time:\n%s", msg.msgs[0])
 	}
 }
 
@@ -2769,14 +2769,11 @@ func TestPRObservation_ReviewNudgesOmitUnknownProviderTime(t *testing.T) {
 	if err := m.ApplyPRObservation(ctx, "mer-1", o); err != nil {
 		t.Fatal(err)
 	}
-	if len(msg.msgs) != 2 {
-		t.Fatalf("want comment and review nudges, got %v", msg.msgs)
+	if len(msg.msgs) != 1 {
+		t.Fatalf("want one batched feedback nudge, got %v", msg.msgs)
 	}
-	if strings.Contains(msg.msgs[0], "posted at") {
-		t.Fatalf("comment nudge invented a posted time:\n%s", msg.msgs[0])
-	}
-	if strings.Contains(msg.msgs[1], "Submitted at") {
-		t.Fatalf("review nudge invented a submitted time:\n%s", msg.msgs[1])
+	if strings.Contains(msg.msgs[0], "posted at") || strings.Contains(msg.msgs[0], "submitted at") {
+		t.Fatalf("batched nudge invented a provider time:\n%s", msg.msgs[0])
 	}
 }
 
