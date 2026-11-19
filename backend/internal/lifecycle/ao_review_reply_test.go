@@ -14,7 +14,7 @@ import (
 func TestPRObservation_AOReviewCommentInExistingThreadIsForwarded(t *testing.T) {
 	m, st, msg := newNoticeManager(t)
 	st.prs["w-1"] = []domain.PullRequest{{URL: donePR, Author: "me"}}
-	st.runs = []domain.ReviewRun{doneRun("run-1", domain.ReviewRunComplete, domain.VerdictChangesRequested, "777", "Summary")}
+	st.runs = []domain.ReviewRun{doneRun("run-1", domain.ReviewRunCompleted, domain.VerdictChangesRequested, "777", "Summary")}
 	st.reviews[donePR] = []domain.PullRequestReview{observedReview("777")}
 	st.comments[donePR] = []domain.PullRequestComment{
 		{ID: "c1", ThreadID: "T1", ReviewID: "100", Author: "someone", File: "a.go", Line: 3, Body: "nil check", AutoInjectReview: true},
