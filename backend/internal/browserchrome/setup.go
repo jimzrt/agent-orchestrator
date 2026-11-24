@@ -69,8 +69,8 @@ type hostManifest struct {
 	AllowedOrigins []string `json:"allowed_origins"`
 }
 
-// ErrChromeNotFound means no Chrome channel's user data directory exists.
-var ErrChromeNotFound = errors.New("google Chrome user data was not found; open Chrome once, then retry")
+// ErrChromeNotFound means no supported browser's user data directory exists.
+var ErrChromeNotFound = errors.New("no supported Chrome-based browser profile was found; open your browser once, then retry")
 
 // DefaultExtensionSource locates the extension bundled next to the daemon:
 // <resources>/daemon/ao → <resources>/browser-extension.

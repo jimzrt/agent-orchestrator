@@ -10,6 +10,10 @@ func defaultBrowsers(home string) []Browser {
 		[2]string{"Google Chrome Beta", "google-chrome-beta"},
 		[2]string{"Google Chrome Dev", "google-chrome-unstable"},
 		[2]string{"Google Chrome for Testing", "google-chrome-for-testing"},
+		[2]string{"Chromium", "chromium"},
+		[2]string{"Brave", "BraveSoftware/Brave-Browser"},
+		[2]string{"Microsoft Edge", "microsoft-edge"},
+		[2]string{"Vivaldi", "vivaldi"},
 	)
 }
 
