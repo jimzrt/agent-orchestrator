@@ -267,17 +267,10 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # Not in the matrix: Linux arm64 has no desktop app, only the headless host package.
-  host-linux-arm64:
-    uses: ./.github/workflows/linux-arm64-host.yml
-    with:
-      ref: ${{ inputs.ref }}
-      version: ${{ inputs.version }}
-
   # Merge the per-platform digest fragments into one digests.json artifact so
   # a downstream consumer reads every expected hash from a single file.
   digests:
-    needs: [build, host-linux-arm64]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
