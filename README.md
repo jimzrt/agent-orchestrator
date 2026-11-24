@@ -37,7 +37,7 @@
 > [`56c30f82e`](https://github.com/OrchestratorInc/agent-orchestrator/commit/56c30f82e8)
 > plus these open upstream PRs (at the listed head):
 >
-> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821) @ `4e1e51ca9`: Codex reviewer result submit fixes
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821) @ `0e3b8e7cb`: Codex reviewer result submit fixes
 > - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831) @ `53576ee28`: deliver a PR's review feedback as one batched message
 >
 > and local changes that are not upstream PRs yet:
