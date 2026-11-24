@@ -28,6 +28,16 @@ func (s *noticeStore) ListPendingReviewRunNotices(_ context.Context, id domain.S
 	return out, nil
 }
 
+func (s *noticeStore) ListReviewRunsBySession(_ context.Context, id domain.SessionID) ([]domain.ReviewRun, error) {
+	var out []domain.ReviewRun
+	for _, run := range s.runs {
+		if run.SessionID == id {
+			out = append(out, run)
+		}
+	}
+	return out, nil
+}
+
 func (s *noticeStore) ListSessionsWithPendingReviewRunNotices(context.Context) ([]domain.SessionID, error) {
 	seen := map[domain.SessionID]bool{}
 	var out []domain.SessionID
