@@ -34,14 +34,19 @@
 > [!WARNING]
 > **Custom build.** This branch is a personal custom build of Agent
 > Orchestrator, not an official release. It is upstream `main` at
-> [`12e1fd738`](https://github.com/OrchestratorInc/agent-orchestrator/commit/12e1fd738b6a92847b22b2813f73b01ef93a2936)
-> plus these open upstream PRs:
+> [`56c30f82e`](https://github.com/OrchestratorInc/agent-orchestrator/commit/56c30f82e8)
+> plus these open upstream PRs (at the listed head):
 >
-> - [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614): flush done reports early once no other worker is working
-> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821): Codex reviewer result submit fixes
-> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831): deliver a PR's review feedback as one batched message
-> - [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955): tell the worker when an AO review run finishes
-> - [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956): find a just-opened PR when `ao review trigger` runs
+> - [#6821](https://github.com/OrchestratorInc/agent-orchestrator/pull/6821) @ `4e1e51ca9`: Codex reviewer result submit fixes
+> - [#6831](https://github.com/OrchestratorInc/agent-orchestrator/pull/6831) @ `53576ee28`: deliver a PR's review feedback as one batched message
+>
+> and local changes that are not upstream PRs yet:
+>
+> - queue-aware `ao send` (local): a plain `ao send` to a busy Chat session says it was queued and at which position
+> - on top of the upstream PR-author reply filter ([#8462](https://github.com/OrchestratorInc/agent-orchestrator/pull/8462)), an AO reviewer comment that lands in an existing review thread is still forwarded to the worker (the AO reviewer posts as the PR author)
+> - Linux: the browser bridge's native host is also registered with Chromium, Brave, Edge and Vivaldi (local)
+>
+> [#6614](https://github.com/OrchestratorInc/agent-orchestrator/pull/6614) (flush done reports early), [#6955](https://github.com/OrchestratorInc/agent-orchestrator/pull/6955) (tell the worker when an AO review run finishes) and [#6956](https://github.com/OrchestratorInc/agent-orchestrator/pull/6956) (find a just-opened PR when `ao review trigger` runs) are merged upstream.
 >
 > **Auto-update is off.** The build bakes in an update feed that doesn't exist,
 > so it never updates itself. To update, install a newer custom build by hand.
